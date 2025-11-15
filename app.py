@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 import requests
 import json
+import os
 from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -70,10 +71,60 @@ st.markdown("""
 API_BASE_URL = "http://localhost:8000"  # Default local API
 
 @st.cache_data
+def generate_sample_data():
+    """Generate sample data for Streamlit Cloud demo"""
+    # Generate sample customer data
+    np.random.seed(42)
+    n_customers = 1000
+
+    customers = pd.DataFrame({
+        'customer_id': [f'CUST_{i:05d}' for i in range(n_customers)],
+        'age': np.random.normal(35, 12, n_customers).astype(int).clip(18, 80),
+        'country': np.random.choice(['US', 'UK', 'CA', 'DE', 'FR'], n_customers),
+        'segment': np.random.choice(['premium', 'standard', 'basic'], n_customers,
+                                  p=[0.2, 0.5, 0.3]),
+        'gender': np.random.choice(['M', 'F'], n_customers)
+    })
+
+    # Generate sample transactions
+    n_transactions = 5000
+    transactions = pd.DataFrame({
+        'customer_id': np.random.choice(customers['customer_id'], n_transactions),
+        'amount': np.random.exponential(100, n_transactions).round(2),
+        'channel': np.random.choice(['web', 'mobile', 'api'], n_transactions,
+                                  p=[0.5, 0.3, 0.2])
+    })
+
+    # Generate sample sessions
+    n_sessions = 3000
+    sessions = pd.DataFrame({
+        'customer_id': np.random.choice(customers['customer_id'], n_sessions),
+        'pages_viewed': np.random.poisson(8, n_sessions),
+        'device': np.random.choice(['desktop', 'mobile', 'tablet'], n_sessions,
+                                 p=[0.6, 0.3, 0.1])
+    })
+
+    # Generate sample support tickets
+    n_tickets = 800
+    support = pd.DataFrame({
+        'customer_id': np.random.choice(customers['customer_id'], n_tickets),
+        'category': np.random.choice(['billing', 'technical', 'account', 'general'], n_tickets),
+        'satisfaction_score': np.random.choice([1, 2, 3, 4, 5], n_tickets,
+                                             p=[0.1, 0.1, 0.2, 0.3, 0.3])
+    })
+
+    return customers, transactions, sessions, support
+
+@st.cache_data
 def load_data():
-    """Load and cache the processed data"""
+    """Load data - use sample data for Streamlit Cloud"""
     try:
-        # Try to load processed data if available
+        # For Streamlit Cloud, always use sample data
+        if 'STREAMLIT_CLOUD' in os.environ or not Path("data").exists():
+            st.info("📊 Using sample data for demo (data files not available in cloud)")
+            return generate_sample_data()
+
+        # Try to load processed data if available (local development)
         data_dir = Path("data/processed")
         if data_dir.exists():
             try:
@@ -94,31 +145,68 @@ def load_data():
         return customers, transactions, sessions, support
     except Exception as e:
         st.error(f"Failed to load data: {e}")
-        return None, None, None, None
+        # Fallback to sample data
+        return generate_sample_data()
 
 @st.cache_data
 def load_model_metrics():
-    """Load model performance metrics"""
-    try:
-        metrics_path = Path("models/metrics.json")
-        if metrics_path.exists():
-            with open(metrics_path, 'r') as f:
-                return json.load(f)
-    except Exception as e:
-        st.warning(f"Could not load model metrics: {e}")
-    return None
+    """Load model performance metrics - return sample metrics for demo"""
+    # Sample metrics for demo
+    return {
+        "model_type": "lightgbm",
+        "accuracy": 0.87,
+        "auc": 0.91,
+        "precision": 0.82,
+        "recall": 0.79,
+        "f1": 0.80,
+        "n_features": 25,
+        "training_samples": 8000,
+        "test_samples": 2000
+    }
 
 def make_prediction(features):
-    """Make prediction using the API"""
+    """Make prediction using mock ML model for demo"""
     try:
-        response = requests.post(f"{API_BASE_URL}/predict", json=features, timeout=10)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            st.error(f"API Error: {response.status_code} - {response.text}")
-            return None
-    except requests.exceptions.RequestException as e:
-        st.error(f"Connection Error: {e}")
+        # For demo purposes, create a simple mock prediction based on features
+        # In a real deployment, this would call the actual ML API
+
+        # Calculate a risk score based on some key features
+        risk_score = 0
+
+        # Higher age slightly increases churn risk
+        if features.get('age', 35) > 50:
+            risk_score += 0.1
+
+        # More transactions = lower risk
+        transaction_count = features.get('transaction_count', 10)
+        risk_score -= min(transaction_count / 50, 0.3)
+
+        # Higher support tickets = higher risk
+        support_tickets = features.get('ticket_count', 0)
+        risk_score += min(support_tickets / 10, 0.4)
+
+        # Lower recency score = higher risk
+        recency_score = features.get('recency_days_score', 3)
+        risk_score += (6 - recency_score) / 10
+
+        # Add some randomness
+        risk_score += np.random.normal(0, 0.1)
+        risk_score = np.clip(risk_score, 0, 1)
+
+        # Mock prediction
+        churn_probability = float(risk_score)
+        churn_prediction = 1 if churn_probability > 0.5 else 0
+
+        return {
+            'churn_probability': churn_probability,
+            'churn_prediction': churn_prediction,
+            'confidence_score': abs(churn_probability - 0.5) * 2,
+            'prediction_timestamp': datetime.now().isoformat(),
+            'model_version': 'demo_model_v1.0'
+        }
+
+    except Exception as e:
+        st.error(f"Prediction Error: {e}")
         return None
 
 def create_customer_profile_input():
