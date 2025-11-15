@@ -1,0 +1,35 @@
+# Churn ML Pipeline Configuration
+# Defines paths, processing rules, and parameters for ETL and feature engineering
+
+# Data directories
+raw_data_dir: "data/raw"
+processed_data_dir: "data/processed"
+models_dir: "models"
+logs_dir: "logs"
+
+# ETL Configuration
+churn_cutoff_days: 90  # Days without activity to consider customer churned
+observation_end_date: "2024-12-31"  # End date for churn calculation
+
+# Output paths
+base_table_path: "data/processed/base_table.parquet"
+features_path: "data/processed/features.parquet"
+target_path: "data/processed/target.parquet"
+
+# Data quality thresholds
+max_missing_percentage: 0.1  # Maximum allowed missing value percentage
+min_rows_required: 1000  # Minimum rows required for processing
+
+# Feature engineering settings
+feature_engineering:
+  rfm_quintiles: 5  # Number of quintiles for RFM scoring
+  scaling_method: "standard"  # standard or robust scaling
+  handle_missing: "median"  # median, mean, or zero for missing values
+
+  # Feature selection
+  exclude_features: []  # List of features to exclude
+  variance_threshold: 0.01  # Minimum variance for feature selection
+
+  # Categorical encoding
+  unknown_category_value: "unknown"  # Value for unknown categories
+  max_categories: 50  # Maximum categories before grouping as "other"

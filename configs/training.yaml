@@ -1,0 +1,70 @@
+# Churn ML Training Configuration
+# Defines model training parameters, validation strategy, and evaluation metrics
+
+# Model settings
+model_type: "lightgbm"  # lightgbm, xgboost, logistic_regression, random_forest
+model_params:
+  lightgbm:
+    objective: "binary"
+    metric: "auc"
+    boosting_type: "gbdt"
+    num_leaves: 31
+    learning_rate: 0.1
+    feature_fraction: 0.9
+    bagging_fraction: 0.8
+    bagging_freq: 5
+    verbose: -1
+
+  logistic_regression:
+    C: 1.0
+    penalty: "l2"
+    solver: "lbfgs"
+    max_iter: 1000
+
+  random_forest:
+    n_estimators: 100
+    max_depth: 10
+    min_samples_split: 2
+    min_samples_leaf: 1
+    random_state: 42
+
+# Training settings
+test_size: 0.2  # Train/test split ratio
+val_size: 0.2   # Train/validation split ratio (from training set)
+random_state: 42  # Random seed for reproducibility
+
+# Cross-validation
+cv_folds: 5
+cv_strategy: "stratified"  # stratified, time_series, or random
+
+# Time-aware split (important for churn prediction)
+time_aware_split: true
+time_column: "recency_days"  # Column to sort by for time-aware splitting
+train_cutoff_date: "2024-06-30"  # Training data cutoff date
+val_cutoff_date: "2024-09-30"   # Validation data cutoff date
+
+# Evaluation metrics
+primary_metric: "auc"  # auc, accuracy, precision, recall, f1
+secondary_metrics: ["precision", "recall", "f1", "accuracy"]
+
+# Threshold optimization
+optimize_threshold: true
+threshold_metric: "f1"  # Metric to optimize threshold for
+
+# Feature importance
+calculate_feature_importance: true
+top_features_count: 20  # Number of top features to save
+
+# Model artifacts
+model_save_path: "models/model.pkl"
+metrics_save_path: "models/metrics.json"
+feature_importance_path: "models/feature_importance.json"
+
+# Training monitoring
+early_stopping: true
+early_stopping_rounds: 50
+eval_result_path: "models/eval_results.json"
+
+# Resource limits (for Apple Silicon compatibility)
+max_memory_gb: 8
+n_jobs: -1  # Use all available cores

@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  churn-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount the entire project directory for data persistence
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - churn-network
+
+  # Optional: Add a data preparation service for ETL
+  churn-etl:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+    command: ["python", "-m", "src.data_pipeline", "--config", "/app/configs/pipeline.yaml"]
+    profiles:
+      - etl
+    networks:
+      - churn-network
+
+  # Optional: Add a training service
+  churn-training:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+    command: ["python", "-m", "src.model_training", "--config", "/app/configs/training.yaml"]
+    profiles:
+      - training
+    networks:
+      - churn-network
+
+networks:
+  churn-network:
+    driver: bridge
+
+# Usage examples:
+# Start API: docker-compose up churn-api
+# Run ETL: docker-compose --profile etl run --rm churn-etl
+# Train model: docker-compose --profile training run --rm churn-training
