@@ -71,14 +71,14 @@ elif page == "Predict Churn":
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            st.metric("Churn Probability", ".1%")
+            st.metric("Churn Probability", f"{churn_probability:.1%}")
 
         with col2:
             st.metric("Risk Level", prediction)
 
         with col3:
             confidence = abs(churn_probability - 0.5) * 200
-            st.metric("Confidence", ".1f")
+            st.metric("Confidence", f"{confidence:.1f}")
 
         # Visual feedback
         if churn_probability > 0.6:
